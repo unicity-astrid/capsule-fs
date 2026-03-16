@@ -27,7 +27,12 @@ mod tests {
     #[test]
     fn basic_match() {
         let mut matches = Vec::new();
-        grep_content("test.rs", "hello foo bar\nbaz\nfoo again", "foo", &mut matches);
+        grep_content(
+            "test.rs",
+            "hello foo bar\nbaz\nfoo again",
+            "foo",
+            &mut matches,
+        );
         assert_eq!(matches.len(), 2);
         assert_eq!(matches[0], "test.rs:1:hello foo bar");
         assert_eq!(matches[1], "test.rs:3:foo again");
