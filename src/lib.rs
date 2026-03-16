@@ -105,10 +105,16 @@ impl FsTools {
 
         let count = content.matches(&args.old_string).count();
         if count == 0 {
-            return Err(SysError::ApiError(format!("Exact string not found in {}", args.file_path)));
+            return Err(SysError::ApiError(format!(
+                "Exact string not found in {}",
+                args.file_path
+            )));
         }
         if count > 1 {
-            return Err(SysError::ApiError(format!("Found {} occurrences of string in {}. Please be more specific.", count, args.file_path)));
+            return Err(SysError::ApiError(format!(
+                "Found {} occurrences of string in {}. Please be more specific.",
+                count, args.file_path
+            )));
         }
 
         let new_content = content.replace(&args.old_string, &args.new_string);
@@ -136,13 +142,7 @@ impl FsTools {
         let mut matches: Vec<String> = Vec::new();
         let mut files_visited: usize = 0;
 
-        walk_and_grep(
-            root,
-            &args.pattern,
-            &mut matches,
-            &mut files_visited,
-            0,
-        );
+        walk_and_grep(root, &args.pattern, &mut matches, &mut files_visited, 0);
 
         if matches.is_empty() {
             return Ok("No matches found.".into());
@@ -238,22 +238,16 @@ fn file_stat(path: &str) -> Result<FileStat, SysError> {
     let stat_bytes = fs::metadata(path)?;
     let val: serde_json::Value = serde_json::from_slice(&stat_bytes)
         .map_err(|e| SysError::ApiError(format!("failed to parse metadata for {path}: {e}")))?;
-    let is_dir = val
-        .get("isDir")
-        .and_then(|v| v.as_bool())
-        .ok_or_else(|| {
-            SysError::ApiError(format!(
-                "metadata for {path} is missing or has invalid 'isDir' field"
-            ))
-        })?;
-    let size = val
-        .get("size")
-        .and_then(|v| v.as_u64())
-        .ok_or_else(|| {
-            SysError::ApiError(format!(
-                "metadata for {path} is missing or has invalid 'size' field"
-            ))
-        })?;
+    let is_dir = val.get("isDir").and_then(|v| v.as_bool()).ok_or_else(|| {
+        SysError::ApiError(format!(
+            "metadata for {path} is missing or has invalid 'isDir' field"
+        ))
+    })?;
+    let size = val.get("size").and_then(|v| v.as_u64()).ok_or_else(|| {
+        SysError::ApiError(format!(
+            "metadata for {path} is missing or has invalid 'size' field"
+        ))
+    })?;
     Ok(FileStat { is_dir, size })
 }
 
@@ -285,7 +279,9 @@ fn walk_and_grep(
     let entry_names: Vec<String> = match serde_json::from_slice(&entries_bytes) {
         Ok(v) => v,
         Err(e) => {
-            let _ = log::warn(&format!("failed to parse directory entries for '{dir}': {e}"));
+            let _ = log::warn(&format!(
+                "failed to parse directory entries for '{dir}': {e}"
+            ));
             return;
         }
     };
