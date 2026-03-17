@@ -73,8 +73,17 @@ pub struct MoveFileArgs {
     pub destination_path: String,
 }
 
+/// Sandboxed filesystem tools for reading, writing, searching, and managing files.
+///
+/// All operations go through the Astrid VFS — the agent cannot escape the
+/// workspace boundary. Write operations are copy-on-write (changes are staged
+/// in an overlay until committed).
 #[capsule]
 impl FsTools {
+    /// Read the contents of a file. Returns the full file by default, or a
+    /// specific line range if `start_line` and/or `end_line` are provided.
+    /// Line numbers are 1-based. Use this to inspect source code, configs,
+    /// logs, or any text file in the workspace.
     #[astrid::tool("read_file")]
     pub fn read_file(&self, args: ReadFileArgs) -> Result<String, SysError> {
         // Use the VFS Airlock to read the file
@@ -93,13 +102,21 @@ impl FsTools {
         Ok(slice.join("\n"))
     }
 
-    #[astrid::tool("write_file")]
+    /// Create or overwrite a file with the given content. The entire file is
+    /// replaced — use `replace_in_file` for surgical edits to existing files.
+    /// Parent directories must already exist (use `create_directory` first).
+    #[astrid::tool("write_file", mutable)]
     pub fn write_file(&self, args: WriteFileArgs) -> Result<String, SysError> {
         fs::write(&args.file_path, &args.content)?;
         Ok(format!("Successfully wrote to {}", args.file_path))
     }
 
-    #[astrid::tool("replace_in_file")]
+    /// Replace an exact string in a file with a new string. The `old_string`
+    /// must appear exactly once — if it appears zero times the tool errors
+    /// (nothing to replace), and if it appears more than once it errors
+    /// (ambiguous, provide more surrounding context to make the match unique).
+    /// This is the preferred way to edit existing files.
+    #[astrid::tool("replace_in_file", mutable)]
     pub fn replace_in_file(&self, args: ReplaceInFileArgs) -> Result<String, SysError> {
         let content = fs::read_to_string(&args.file_path)?;
 
@@ -123,6 +140,9 @@ impl FsTools {
         Ok(format!("Successfully replaced text in {}", args.file_path))
     }
 
+    /// List the contents of a directory. Returns file and subdirectory names.
+    /// Use this to explore project structure, find files, or verify that
+    /// expected files exist before reading them.
     #[astrid::tool("list_directory")]
     pub fn list_directory(&self, args: ListDirectoryArgs) -> Result<String, SysError> {
         let bytes = fs::read_dir(&args.dir_path)?;
@@ -132,6 +152,10 @@ impl FsTools {
         Ok(result)
     }
 
+    /// Search file contents for a pattern. Recursively walks the directory tree
+    /// starting from `dir_path` (defaults to workspace root ".") and returns
+    /// matching lines in `path:line_number:content` format. Use this to find
+    /// function definitions, usages, error messages, or any text across the codebase.
     #[astrid::tool("grep_search")]
     pub fn grep_search(&self, args: GrepSearchArgs) -> Result<String, SysError> {
         if args.pattern.is_empty() {
@@ -151,13 +175,19 @@ impl FsTools {
         Ok(matches.join("\n"))
     }
 
-    #[astrid::tool("create_directory")]
+    /// Create a new directory. Parent directories must already exist.
+    /// Use this before `write_file` if the target directory doesn't exist yet.
+    #[astrid::tool("create_directory", mutable)]
     pub fn create_directory(&self, args: CreateDirectoryArgs) -> Result<String, SysError> {
         fs::create_dir(&args.dir_path)?;
         Ok(format!("Successfully created directory {}", args.dir_path))
     }
 
-    #[astrid::tool("delete_file")]
+    /// Delete a file from the workspace. Only files can be deleted, not
+    /// directories. Currently limited to files created during the current
+    /// session (existing workspace files cannot be deleted due to VFS overlay
+    /// limitations).
+    #[astrid::tool("delete_file", mutable)]
     pub fn delete_file(&self, args: DeleteFileArgs) -> Result<String, SysError> {
         let stat = match file_stat(&args.file_path) {
             Ok(s) => s,
@@ -178,7 +208,11 @@ impl FsTools {
         Ok(format!("Successfully deleted {}", args.file_path))
     }
 
-    #[astrid::tool("move_file")]
+    /// Move (rename) a file from one path to another. The destination must not
+    /// already exist. Only files can be moved, not directories. The operation
+    /// is atomic. Max file size: 10 MB. Note: only files created in the
+    /// current session can be moved due to VFS overlay limitations.
+    #[astrid::tool("move_file", mutable)]
     pub fn move_file(&self, args: MoveFileArgs) -> Result<String, SysError> {
         // Single stat covers both existence and directory checks.
         let src_stat = match file_stat(&args.source_path) {
