@@ -145,11 +145,10 @@ impl FsTools {
     /// expected files exist before reading them.
     #[astrid::tool("list_directory")]
     pub fn list_directory(&self, args: ListDirectoryArgs) -> Result<String, SysError> {
-        let bytes = fs::read_dir(&args.dir_path)?;
-        // Currently assuming it returns JSON array of entries. Let's just return raw string for now
-        // if we haven't typed it in SDK.
-        let result = String::from_utf8(bytes).map_err(|e| SysError::ApiError(e.to_string()))?;
-        Ok(result)
+        let names: Vec<String> = fs::read_dir(&args.dir_path)?
+            .map(|e| e.file_name().to_string())
+            .collect();
+        serde_json::to_string(&names).map_err(|e| SysError::ApiError(e.to_string()))
     }
 
     /// Search file contents for a pattern. Recursively walks the directory tree
@@ -269,20 +268,11 @@ struct FileStat {
 
 /// Returns parsed metadata for `path`, or a clear "not found" error.
 fn file_stat(path: &str) -> Result<FileStat, SysError> {
-    let stat_bytes = fs::metadata(path)?;
-    let val: serde_json::Value = serde_json::from_slice(&stat_bytes)
-        .map_err(|e| SysError::ApiError(format!("failed to parse metadata for {path}: {e}")))?;
-    let is_dir = val.get("isDir").and_then(|v| v.as_bool()).ok_or_else(|| {
-        SysError::ApiError(format!(
-            "metadata for {path} is missing or has invalid 'isDir' field"
-        ))
-    })?;
-    let size = val.get("size").and_then(|v| v.as_u64()).ok_or_else(|| {
-        SysError::ApiError(format!(
-            "metadata for {path} is missing or has invalid 'size' field"
-        ))
-    })?;
-    Ok(FileStat { is_dir, size })
+    let meta = fs::metadata(path)?;
+    Ok(FileStat {
+        is_dir: meta.is_dir(),
+        size: meta.len(),
+    })
 }
 
 /// Recursively walks `dir` and collects lines containing `pattern`.
@@ -302,46 +292,28 @@ fn walk_and_grep(
         return;
     }
 
-    let entries_bytes = match fs::read_dir(dir) {
-        Ok(b) => b,
+    let entries = match fs::read_dir(dir) {
+        Ok(rd) => rd,
         Err(e) => {
             let _ = log::debug(format!("failed to read directory '{dir}': {e}"));
             return;
         }
     };
 
-    let entry_names: Vec<String> = match serde_json::from_slice(&entries_bytes) {
-        Ok(v) => v,
-        Err(e) => {
-            let _ = log::warn(format!(
-                "failed to parse directory entries for '{dir}': {e}"
-            ));
-            return;
-        }
-    };
-
-    for name in entry_names {
+    for entry in entries {
         if matches.len() >= GREP_MAX_MATCHES || *files_visited >= GREP_MAX_FILES {
             return;
         }
 
-        let path = std::path::PathBuf::from(dir)
-            .join(&name)
-            .to_string_lossy()
-            .into_owned();
+        let path = entry.path().to_string();
 
-        let stat_bytes = match fs::metadata(&path) {
-            Ok(b) => b,
+        let is_dir = match fs::metadata(&path) {
+            Ok(meta) => meta.is_dir(),
             Err(e) => {
                 let _ = log::debug(format!("failed to stat path '{path}': {e}"));
                 continue;
             }
         };
-
-        let is_dir = serde_json::from_slice::<serde_json::Value>(&stat_bytes)
-            .ok()
-            .and_then(|v| v.get("isDir")?.as_bool())
-            .unwrap_or(false);
 
         if is_dir {
             walk_and_grep(&path, pattern, matches, files_visited, depth + 1);
