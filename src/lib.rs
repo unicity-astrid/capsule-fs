@@ -60,14 +60,14 @@ pub struct CreateDirectoryArgs {
 #[derive(Debug, Default, Deserialize, schemars::JsonSchema)]
 pub struct DeleteFileArgs {
     /// The path to the file to delete.
-    /// Note: Currently only supports deleting files created during the current session. Attempting to delete existing workspace files will fail due to lack of whiteout support.
+    /// Note: Currently only supports deleting files created during the current session. Attempting to delete existing CWD files will fail due to lack of whiteout support.
     pub file_path: String,
 }
 
 #[derive(Debug, Default, Deserialize, schemars::JsonSchema)]
 pub struct MoveFileArgs {
     /// The source path of the file to move.
-    /// Note: Currently only supports moving files created during the current session. Attempting to move existing workspace files will fail due to lack of whiteout support.
+    /// Note: Currently only supports moving files created during the current session. Attempting to move existing CWD files will fail due to lack of whiteout support.
     pub source_path: String,
     /// The destination path for the file.
     pub destination_path: String,
@@ -76,14 +76,14 @@ pub struct MoveFileArgs {
 /// Sandboxed filesystem tools for reading, writing, searching, and managing files.
 ///
 /// All operations go through the Astrid VFS — the agent cannot escape the
-/// workspace boundary. Write operations are copy-on-write (changes are staged
+/// CWD boundary. Write operations are copy-on-write (changes are staged
 /// in an overlay until committed).
 #[capsule]
 impl FsTools {
     /// Read the contents of a file. Returns the full file by default, or a
     /// specific line range if `start_line` and/or `end_line` are provided.
     /// Line numbers are 1-based. Use this to inspect source code, configs,
-    /// logs, or any text file in the workspace.
+    /// logs, or any text file in the current directory.
     #[astrid::tool("read_file")]
     pub fn read_file(&self, args: ReadFileArgs) -> Result<String, SysError> {
         // Use the VFS Airlock to read the file
@@ -152,7 +152,7 @@ impl FsTools {
     }
 
     /// Search file contents for a pattern. Recursively walks the directory tree
-    /// starting from `dir_path` (defaults to workspace root ".") and returns
+    /// starting from `dir_path` (defaults to CWD root ".") and returns
     /// matching lines in `path:line_number:content` format. Use this to find
     /// function definitions, usages, error messages, or any text across the codebase.
     #[astrid::tool("grep_search")]
@@ -182,9 +182,9 @@ impl FsTools {
         Ok(format!("Successfully created directory {}", args.dir_path))
     }
 
-    /// Delete a file from the workspace. Only files can be deleted, not
+    /// Delete a file from the current directory. Only files can be deleted, not
     /// directories. Currently limited to files created during the current
-    /// session (existing workspace files cannot be deleted due to VFS overlay
+    /// session (existing CWD files cannot be deleted due to VFS overlay
     /// limitations).
     #[astrid::tool("delete_file", mutable)]
     pub fn delete_file(&self, args: DeleteFileArgs) -> Result<String, SysError> {

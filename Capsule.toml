@@ -13,7 +13,7 @@ type = "executable"
 # to ~/.astrid/ (which contains keys, audit DBs, etc.). Read is permitted for
 # file inspection. Write access to home should be granted per-capsule only
 # when needed (e.g. a plugin installer capsule).
-capabilities = { fs_read = ["workspace://", "home://"], fs_write = ["workspace://"] }
+capabilities = { fs_read = ["cwd://", "home://"], fs_write = ["cwd://"] }
 
 [capabilities]
 ipc_publish = ["tool.v1.execute.*.result", "tool.v1.response.describe.*"]
