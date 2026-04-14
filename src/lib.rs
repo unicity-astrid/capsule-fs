@@ -107,7 +107,7 @@ impl FsTools {
     /// Parent directories must already exist (use `create_directory` first).
     #[astrid::tool("write_file", mutable)]
     pub fn write_file(&self, args: WriteFileArgs) -> Result<String, SysError> {
-        fs::write(&args.file_path, &args.content)?;
+        fs::write(&args.file_path, args.content.as_bytes())?;
         Ok(format!("Successfully wrote to {}", args.file_path))
     }
 
@@ -135,7 +135,7 @@ impl FsTools {
         }
 
         let new_content = content.replace(&args.old_string, &args.new_string);
-        fs::write(&args.file_path, &new_content)?;
+        fs::write(&args.file_path, new_content.as_bytes())?;
 
         Ok(format!("Successfully replaced text in {}", args.file_path))
     }
@@ -295,7 +295,7 @@ fn walk_and_grep(
     let entries = match fs::read_dir(dir) {
         Ok(rd) => rd,
         Err(e) => {
-            let _ = log::debug(format!("failed to read directory '{dir}': {e}"));
+            log::debug(format!("failed to read directory '{dir}': {e}"));
             return;
         }
     };
@@ -310,7 +310,7 @@ fn walk_and_grep(
         let is_dir = match fs::metadata(&path) {
             Ok(meta) => meta.is_dir(),
             Err(e) => {
-                let _ = log::debug(format!("failed to stat path '{path}': {e}"));
+                log::debug(format!("failed to stat path '{path}': {e}"));
                 continue;
             }
         };
@@ -330,7 +330,7 @@ fn grep_file(path: &str, pattern: &str, matches: &mut Vec<String>) {
     let content = match fs::read_to_string(path) {
         Ok(c) => c,
         Err(e) => {
-            let _ = log::debug(format!("skipping unreadable file '{path}': {e}"));
+            log::debug(format!("skipping unreadable file '{path}': {e}"));
             return;
         }
     };
