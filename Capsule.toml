@@ -16,16 +16,18 @@ type = "executable"
 capabilities = { fs_read = ["cwd://", "home://"], fs_write = ["cwd://"] }
 
 [publish]
-"tool.v1.execute.*.result" = { wit = "TODO" }
+"tool.v1.execute.*.result" = { wit = "@unicity-astrid/wit/types/tool-call-result" }
+# TODO: no canonical WIT type yet for tool describe response envelope
 "tool.v1.response.describe.*" = { wit = "TODO" }
 
 [subscribe]
-"tool.v1.execute.read_file" = { wit = "TODO", handler = "tool_execute_read_file" }
-"tool.v1.execute.write_file" = { wit = "TODO", handler = "tool_execute_write_file" }
-"tool.v1.execute.replace_in_file" = { wit = "TODO", handler = "tool_execute_replace_in_file" }
-"tool.v1.execute.list_directory" = { wit = "TODO", handler = "tool_execute_list_directory" }
-"tool.v1.execute.grep_search" = { wit = "TODO", handler = "tool_execute_grep_search" }
-"tool.v1.execute.create_directory" = { wit = "TODO", handler = "tool_execute_create_directory" }
-"tool.v1.execute.delete_file" = { wit = "TODO", handler = "tool_execute_delete_file" }
-"tool.v1.execute.move_file" = { wit = "TODO", handler = "tool_execute_move_file" }
+"tool.v1.execute.read_file" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_read_file" }
+"tool.v1.execute.write_file" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_write_file" }
+"tool.v1.execute.replace_in_file" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_replace_in_file" }
+"tool.v1.execute.list_directory" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_list_directory" }
+"tool.v1.execute.grep_search" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_grep_search" }
+"tool.v1.execute.create_directory" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_create_directory" }
+"tool.v1.execute.delete_file" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_delete_file" }
+"tool.v1.execute.move_file" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_move_file" }
+# TODO: no canonical WIT type yet for tool describe request envelope
 "tool.v1.request.describe" = { wit = "TODO", handler = "tool_describe" }
