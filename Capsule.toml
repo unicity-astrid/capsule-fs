@@ -2,7 +2,7 @@
 name = "astrid-capsule-fs"
 version = "0.1.0"
 description = "Core filesystem tools for the Astrid OS"
-authors = ["Astrid Core Team"]
+authors = ["Joshua J. Bouw <dev@joshuajbouw.com>", "Unicity Labs <info@unicity-labs.com>"]
 astrid-version = ">=0.1.0"
 
 [[component]]
@@ -15,13 +15,10 @@ type = "executable"
 # when needed (e.g. a plugin installer capsule).
 capabilities = { fs_read = ["cwd://", "home://"], fs_write = ["cwd://"] }
 
-# Publish ACL: the [publish] keys are the only IPC-publish declaration.
 [publish]
 "tool.v1.execute.*.result" = { wit = "@unicity-astrid/wit/types/tool-call-result" }
 "tool.v1.response.describe.*" = { wit = "@unicity-astrid/wit/tool/describe-response" }
 
-# Interceptor bindings: a [subscribe] entry's `handler` binds the topic to a
-# `#[astrid::tool]`-generated export. The keys also serve as the subscribe ACL.
 [subscribe]
 "tool.v1.execute.read_file" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_read_file" }
 "tool.v1.execute.write_file" = { wit = "@unicity-astrid/wit/types/tool-call", handler = "tool_execute_write_file" }
