@@ -3,6 +3,8 @@
 [![License: MIT OR Apache-2.0](https://img.shields.io/badge/License-MIT%20OR%20Apache--2.0-blue.svg)](LICENSE-MIT)
 [![MSRV: 1.94](https://img.shields.io/badge/MSRV-1.94-blue)](https://www.rust-lang.org)
 
+[English](README.md) | [简体中文](README.zh-CN.md) | [日本語](README.ja.md)
+
 **Filesystem tools for [Astrid OS](https://github.com/unicity-astrid/astrid) agents.**
 
 In the OS model, this capsule is the coreutils package. It gives agents the ability to read, write, search, and navigate the workspace filesystem through the kernel's VFS airlock.
